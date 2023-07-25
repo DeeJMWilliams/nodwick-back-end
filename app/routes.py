@@ -53,8 +53,19 @@ def remove_user():
     except Exception as e:
         return f"An Error Occurred: {e}"
     
-#!!! Add game to user's list/collection of games (or create list/collection of games)
-    
+#Add game ID to user's list of games
+@user_bp.route('', methods=['PATCH'])
+def add_game_to_user():
+    try:
+        game_id = request.args.get('game_id')
+        user_id = request.args.get('user_id')
+    except Exception as e:
+        return f"An Error Occurred: {e}"
+    user = users_ref.document(user_id).get().to_dict()
+    user['game_ids'].append(game_id)
+    users_ref.document(user_id).set(user)
+    return jsonify({"success": True}), 200
+
 ### GAMES ###
 
 games_ref = db.collection('games')
