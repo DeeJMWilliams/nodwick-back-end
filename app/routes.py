@@ -3,9 +3,15 @@ from app import db
 
 #Blueprints
 user_bp = Blueprint("user", __name__, url_prefix="/users")
+game_bp = Blueprint("game", __name__, url_prefix="/games")
+loc_bp = Blueprint("location", __name__, url_prefix="/locations")
+item_bp = Blueprint("item", __name__, url_prefix="/items")
 
 ### USERS ###
 users_ref = db.collection('users')
+
+#!!! Can you initialize user with blank list/collection (for games?) & vice versa
+#!!! Need to autoincrement IDs for all collections
 
 @user_bp.route('', methods=['POST'])
 def create_user():
@@ -47,5 +53,43 @@ def remove_user():
         return jsonify({"success": True}), 200
     except Exception as e:
         return f"An Error Occurred: {e}"
+    
+#!!! Add game to user's list/collection of games (or create list/collection of games)
+    
+### GAMES ###
+
+games_ref = db.collection('games')
+
+#!!! Create game w/ default "unassigned" item location
+
+#!!! Delete game
+
+#!!! Get game or list of games
+
+#!!! Add user to game's list/collection of users
+
+### LOCATIONS ###
+
+locs_ref = db.collection('locations')
+
+#!!! Create location w/ game ID
+
+#!!! Delete location (& move all items to unassigned)
+
+#!!! Get location or list of locations
+
+### ITEMS ###
+
+items_ref = db.collection('items')
+
+#!!! Create item w/ location ID
+
+#!!! Delete item
+
+#!!! Move (reassign) item and change location ID
+
+#!!! Get item or list of items
+
+
 
 
