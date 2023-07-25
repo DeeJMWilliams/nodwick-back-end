@@ -1,7 +1,7 @@
 from flask import Flask
 from firebase_admin import credentials, firestore, initialize_app
 
-initialize_app(credentials.Certificate('key.json'))
+initialize_app(credentials.Certificate('key.json'), {'databaseURL': 'https://nodwick-inventory-manager.firebaseio.com'})
 db = firestore.client()
 
 # Initialize Flask app

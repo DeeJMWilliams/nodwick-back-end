@@ -1,5 +1,7 @@
 from flask import request, jsonify, make_response, abort, Blueprint
 from app import db
+import uuid
+import datetime
 
 #Blueprints
 user_bp = Blueprint("user", __name__, url_prefix="/users")
@@ -10,23 +12,20 @@ item_bp = Blueprint("item", __name__, url_prefix="/items")
 ### USERS ###
 users_ref = db.collection('users')
 
-#!!! Can you initialize user with blank list/collection (for games?) & vice versa
-#!!! Need to autoincrement IDs for all collections
-
 @user_bp.route('', methods=['POST'])
 def create_user():
-    #Verify presence of ID
-    try:
-        id = request.json['id']
-    except Exception as e:
-        return f"An Error Occurred: {e}"
     #Verify presence of email and password
     if 'email' not in request.json.keys():
         abort(make_response(jsonify({"message": "Email not found"}), 404))
     if 'password' not in request.json.keys():
         abort(make_response(jsonify({"message": "Password not found"}), 404))
-    #Create user
-    users_ref.document(id).set(request.json)
+    #Create user with id, games, and timestamp fields
+    new_user = request.json
+    id = str(uuid.uuid4())
+    new_user['game_ids'] = []
+    new_user['uid'] = id
+    new_user['timestamp'] = str(datetime.datetime.now())
+    users_ref.document(id).set(new_user)
     return jsonify({"success": True}), 200
 
 @user_bp.route('', methods=['GET'])
@@ -65,6 +64,13 @@ games_ref = db.collection('games')
 #!!! Delete game
 
 #!!! Get game or list of games
+
+#!!! Get games by user
+# @user_bp.route('/<user_id>/games', methods=['GET'])
+# def get_games_by_user(user_id):
+#     games = users_ref.document(user_id).collection('games').get()
+#     all_games = [doc.to_dict() for doc in games]
+#     return jsonify(all_games), 200
 
 #!!! Add user to game's list/collection of users
 
