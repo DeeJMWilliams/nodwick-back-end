@@ -1,5 +1,14 @@
 import pytest
 
+### HELPERS ###
+
+def get_id(arr, target, id_type):
+    for item in arr:
+        if item['name'] == target:
+            result = item[id_type]
+            break
+    return result
+
 ### SETUP ###
 
 def create_three_users(client):
@@ -60,10 +69,7 @@ def test_get_user_by_id(client):
     associate_games_and_users(client)
     #Get user ID of Sarah
     users = client.get('/users').get_json()
-    for user in users:
-        if user['name'] == 'Sarah':
-            user_id = user['uid']
-            break
+    user_id = get_id(users, 'Sarah', 'uid')
 
     #Run get request again on user ID
     response = client.get(f'/users?user_id={user_id}')
@@ -100,12 +106,8 @@ def test_add_user_to_db(client):
 @pytest.mark.users
 def test_delete_user(client):
     associate_games_and_users(client)
-    #Get user ID of Sarah
     users = client.get('/users').get_json()
-    for user in users:
-        if user['name'] == 'Sarah':
-            user_id = user['uid']
-            break
+    user_id = get_id(users, 'Sarah', 'uid')
     #Delete Sarah
     response = client.delete(f'/users?user_id={user_id}')
     response_body = response.get_json()
@@ -140,11 +142,7 @@ def test_get_games(client):
 def test_get_game_by_id(client):
     associate_games_and_users(client)
     games = client.get('/games').get_json()
-    #Get Pathfinder's ID
-    for game in games:
-        if game['name'] == 'Pathfinder 2e':
-            game_id = game['gid']
-            break
+    game_id = get_id(games, 'Pathfinder 2e', 'gid')
     response = client.get(f'/games?game_id={game_id}')
     response_body = response.get_json()
 
@@ -157,11 +155,7 @@ def test_get_game_by_id(client):
 def test_delete_game(client):
     associate_games_and_users(client)
     games = client.get('/games').get_json()
-    #Get Pathfinder's ID
-    for game in games:
-        if game['name'] == 'Pathfinder 2e':
-            game_id = game['gid']
-            break
+    game_id = get_id(games, 'Pathfinder 2e', 'gid')
     response = client.delete(f'/games?game_id={game_id}')
     response_body = response.get_json()
 
@@ -182,11 +176,7 @@ def test_delete_game(client):
 def test_read_games_from_user(client):
     associate_games_and_users(client)
     users = client.get('/users').get_json()
-    #Get Jaehyun's ID
-    for user in users:
-        if user['name'] == 'Jaehyun':
-            user_id = user['uid']
-            break
+    user_id = get_id(users, 'Jaehyun', 'uid')
     
     response = client.get(f'/users/games?user_id={user_id}')
     response_body = response.get_json()
@@ -194,4 +184,43 @@ def test_read_games_from_user(client):
     assert len(response_body) == 2
     for game in response_body:
         assert user_id in game['user_ids']
+
+### LOCATIONS ###
+
+@pytest.mark.locations
+def test_create_location_in_game(client):
+    associate_games_and_users(client)
+    games = client.get('/games').get_json()
+    game_id = get_id(games, 'Delta Green', 'gid')
+    
+    response = client.post(f'/games/locations?game_id={game_id}', json={'name': 'Agent Smith'})
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Agent Smith'
+    assert response_body['gid'] == game_id
+    assert 'timestamp' in response_body.keys()
+    assert 'lid' in response_body.keys()
+    assert 'item_ids' in response_body.keys()
+
+    locations = client.get(f'/games/locations?game_id={game_id}').get_json()
+    assert len(locations) == 2
+
+@pytest.mark.locations
+def test_delete_location(client):
+    associate_games_and_users(client)
+    games = client.get('/games').get_json()
+    game_id = get_id(games, 'Paranoia', 'gid')
+    #Add temporary location
+    location = client.post(f'/games/locations?game_id={game_id}', json={'name': 'Closet'}).get_json()
+    loc_id = location['lid']
+
+    response = client.delete(f'/games/locations?game_id={game_id}&loc_id={loc_id}')
+    response_body = response.get_json()
+
+    assert response_body['success'] == True
+
+    locations = client.get(f'/games/locations?game_id={game_id}').get_json()
+    assert len(locations) == 1
+
+    #!!! Add tests for item unassignment
 

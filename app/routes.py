@@ -145,7 +145,7 @@ def add_location():
     loc_ref = games_ref.document(game_id).collection('locations')
     loc_data = {'name': name, 'lid': loc_id, 'gid': game_id, 'item_ids': [], 'timestamp': str(datetime.datetime.now())}
     loc_ref.document(loc_id).set(loc_data)
-    return jsonify({'success': True}), 200
+    return jsonify(loc_data), 200
 
 #Delete location and unassign all items
 @game_bp.route('locations', methods=['DELETE'])
