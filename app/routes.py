@@ -25,8 +25,8 @@ def create_user():
     new_user['game_ids'] = []
     new_user['uid'] = user_id
     new_user['timestamp'] = str(datetime.datetime.now())
-    users_ref.document(id).set(new_user)
-    return jsonify({"success": True}), 200
+    users_ref.document(user_id).set(new_user)
+    return jsonify(new_user), 200
 
 #Read users (all or by ID)
 @user_bp.route('', methods=['GET'])
@@ -82,17 +82,16 @@ def create_game():
     new_game['gid'] = game_id
     new_game['user_ids'] = []
     new_game['timestamp'] = str(datetime.datetime.now())
-    games_ref.document(id).set(new_game)
+    games_ref.document(game_id).set(new_game)
 
     #Create default 'unassigned' location for game
     loc_id = str(uuid.uuid4())
-    loc_ref = games_ref.document(loc_id).collection('locations')
+    loc_ref = games_ref.document(game_id).collection('locations')
     loc_data = {'lid':loc_id, 'gid': game_id, 'name': 'Unassigned', 'timestamp': str(datetime.datetime.now())}
     loc_ref.document(loc_id).set(loc_data)
-    return jsonify({'success': True}), 200
+    return jsonify(new_game), 200
 
 #Delete a game
-#!!! Delete subcollections (locations and items) of game - this is not automatic
 @game_bp.route('', methods=['DELETE'])
 def remove_game():  
     game_id = request.args.get('game_id')
@@ -133,7 +132,7 @@ def read_games_from_user():
     for game_id in users_ref.document(user_id).get().to_dict()['game_ids']:
         game = games_ref.document(game_id).get()
         games_list.append(game.to_dict())
-    return jsonify({'games':games_list})
+    return jsonify(games_list)
 
 ### LOCATIONS ###
 
