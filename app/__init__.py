@@ -16,11 +16,9 @@ def create_app():
 
     #!!! Remove above for deployment
 
-    from .routes import user_bp, game_bp, loc_bp, item_bp
+    from .routes import user_bp, game_bp
     app.register_blueprint(user_bp)
     app.register_blueprint(game_bp)
-    app.register_blueprint(loc_bp)
-    app.register_blueprint(item_bp)
 
     return app
 
