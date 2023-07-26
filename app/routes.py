@@ -92,12 +92,22 @@ def create_game():
     return jsonify({'success': True}), 200
 
 #Delete a game
+#!!! Delete subcollections (locations and items) of game - this is not automatic
 @game_bp.route('', methods=['DELETE'])
 def remove_game():  
     game_id = request.args.get('game_id')
     user_ids = games_ref.document(game_id).get().to_dict()['user_ids']
+    #Remove item and location collections
+    loc_ref = games_ref.document(game_id).collection('locations')
+    for doc in loc_ref.stream():
+        loc_id = doc.to_dict()['lid']
+        loc_ref.document(loc_id).delete()
+    item_ref = games_ref.document(game_id).collection('items')
+    for doc in item_ref.stream():
+        item_id = doc.to_dict()['iid']
+        item_ref.document(item_id).delete()
+    #Remove game from each user
     for user_id in user_ids:
-        #Remove game from each user
         user = users_ref.document(user_id).get().to_dict()
         user['game_ids'] = list(filter(lambda x: x != game_id, user['game_ids']))
         users_ref.document(user_id).set(user)
