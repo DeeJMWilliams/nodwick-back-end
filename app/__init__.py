@@ -17,7 +17,6 @@ def create_app(test_config=None):
         app.config['ENV'] = 'development'
         app.config['DEBUG'] = True
         app.config['TESTING'] = True
-        app.config['databaseURL'] = os.environ.get('TEST_DB')
         db = MockFirestore()
     else:
         app.config['databaseURL'] = os.environ.get('DB')

@@ -87,7 +87,7 @@ def create_game():
     #Create default 'unassigned' location for game
     loc_id = str(uuid.uuid4())
     loc_ref = games_ref.document(game_id).collection('locations')
-    loc_data = {'lid':loc_id, 'gid': game_id, 'name': 'Unassigned', 'timestamp': str(datetime.datetime.now())}
+    loc_data = {'lid':loc_id, 'gid': game_id, 'item_ids': [], 'name': 'Unassigned', 'timestamp': str(datetime.datetime.now())}
     loc_ref.document(loc_id).set(loc_data)
     return jsonify(new_game), 200
 
@@ -159,6 +159,7 @@ def delete_location():
     #Move every item in location to 'Unassigned'
     for item_id in item_ids:
         change_item_location(games_ref, game_id, item_id, unassigned_id)
+        add_item_to_location(games_ref, game_id, item_id, unassigned_id)
     loc_ref.document(loc_id).delete()
     return jsonify({'success': True}), 200
 
@@ -197,7 +198,7 @@ def create_item():
     item_ref.document(item_id).set(new_item)
     #Add item to location's item ID list
     add_item_to_location(games_ref, game_id, item_id, loc_id)
-    return jsonify({'success': True}), 200
+    return jsonify(new_item), 200
     
 #Delete item
 @game_bp.route('/items', methods=['DELETE'])
@@ -232,10 +233,25 @@ def read_items():
     item_ref = games_ref.document(game_id).collection('items')
     if item_id:
         item = item_ref.document(item_id).get()
-        return jsonify(item), 200
+        return jsonify(item.to_dict()), 200
     else:
         all_items = [doc.to_dict() for doc in item_ref.stream()]
         return jsonify(all_items), 200
+
+#Read items from location
+@game_bp.route('/locations/items', methods=['GET'])
+def read_items_from_location():
+    game_id = request.args.get('game_id')
+    loc_id = request.args.get('loc_id')
+    loc_ref = games_ref.document(game_id).collection('locations')
+    location = loc_ref.document(loc_id).get().to_dict()
+    item_ref = games_ref.document(game_id).collection('items')
+    item_ids = location['item_ids']
+    items = []
+    for item_id in item_ids:
+        items.append(item_ref.document(item_id).get().to_dict())
+    return jsonify(items), 200
+
 
 
 

@@ -22,7 +22,7 @@ def change_item_location(games_ref, game_id, item_id, loc_id):
     return item
 
 def get_unassigned(loc_ref):
-    #!!! Reveert for deployment
+    #!!! Revert for deployment
     # unassigned_ref = loc_ref.where(filter=FieldFilter('name', '==', 'Unassigned'))
     unassigned_ref = loc_ref.where('name', '==', 'Unassigned')
     unassigned_id = list(unassigned_ref.get())[0].to_dict()['lid']

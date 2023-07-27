@@ -1,5 +1,10 @@
 import pytest
 
+# NB:
+# Tests must be run one at a time to operate correctly because
+# the database doesn't clear between tests if they are run in
+# a batch. I hope to fix this if I have time.
+
 ### HELPERS ###
 
 def get_id(arr, target, id_type):
@@ -9,49 +14,23 @@ def get_id(arr, target, id_type):
             break
     return result
 
-### SETUP ###
+def get_game(client, name):
+    games = client.get('/games').get_json()
+    return get_id(games, name, 'gid')
 
-def create_three_users(client):
-    steve = client.post('/users', json={'name': 'Steve', 'email': 'steve@gmail.com'}).get_json()
-    jaehyun = client.post('/users', json={'name': 'Jaehyun', 'email': 'jaehyun@gmail.com'}).get_json()
-    sarah = client.post('/users', json={'name': 'Sarah', 'email': 'sarah@gmail.com'}).get_json()
+def get_loc(client, game_id, name):
+    locations = client.get(f'/games/locations?game_id={game_id}').get_json()
+    return get_id(locations, name, 'lid')
 
-    return {'steve': steve, 'jaehyun': jaehyun, 'sarah': sarah}
-
-def create_three_games(client):
-    pathfinder = client.post('/games', json={'name': 'Pathfinder 2e'}).get_json()
-    delta_green = client.post('/games', json={'name': 'Delta Green'}).get_json()
-    paranoia = client.post('/games', json={'name': 'Paranoia'}).get_json()
-
-    return {'paranoia': paranoia, 'delta_green': delta_green, 'pathfinder': pathfinder}
-
-def associate_games_and_users(client):
-    users = create_three_users(client)
-    games = create_three_games(client)
-    #Define games
-    pathfinder = games['pathfinder']
-    delta_green = games['delta_green']
-    paranoia = games['paranoia']
-    #Define users
-    steve = users['steve']
-    jaehyun = users['jaehyun']
-    sarah = users['sarah']
-    #Add all users to pathfinder game
-    client.patch(f'/users?user_id={steve["uid"]}&game_id={pathfinder["gid"]}')
-    client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={pathfinder["gid"]}')
-    client.patch(f'/users?user_id={sarah["uid"]}&game_id={pathfinder["gid"]}')
-    #Add steve and sarah to delta green game
-    client.patch(f'/users?user_id={steve["uid"]}&game_id={delta_green["gid"]}')
-    client.patch(f'/users?user_id={sarah["uid"]}&game_id={delta_green["gid"]}')
-    #Add sarah and jaehyun to paranoia game
-    client.patch(f'/users?user_id={sarah["uid"]}&game_id={paranoia["gid"]}')
-    client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={paranoia["gid"]}')
+def get_item(client, game_id, name):
+    items = client.get(f'/games/items?game_id={game_id}').get_json()
+    return get_id(items, name, 'iid')
 
 ### USERS ###
 
 @pytest.mark.users
-def test_get_all_users(client):
-    associate_games_and_users(client)
+def test_get_all_users(client, setup_db):
+    # setup_db(client)
     response = client.get('/users')
     response_body = response.get_json()
 
@@ -64,9 +43,7 @@ def test_get_all_users(client):
         assert 'game_ids' in user.keys()
 
 @pytest.mark.users
-def test_get_user_by_id(client):
-    #Get all users to extract user ID
-    associate_games_and_users(client)
+def test_get_user_by_id(client, setup_db):
     #Get user ID of Sarah
     users = client.get('/users').get_json()
     user_id = get_id(users, 'Sarah', 'uid')
@@ -83,7 +60,7 @@ def test_get_user_by_id(client):
     assert 'game_ids' in user.keys()
 
 @pytest.mark.users
-def test_create_user(client):
+def test_create_user(client, setup_db):
     response = client.post('/users', json={'name': 'Jamal', 'email': 'jamal@gmail.com'})
     response_body = response.get_json()
 
@@ -94,9 +71,9 @@ def test_create_user(client):
     assert 'timestamp' in response_body.keys()
     assert 'game_ids' in response_body.keys()
 
+
 @pytest.mark.users
-def test_add_user_to_db(client):
-    associate_games_and_users(client)
+def test_add_user_to_db(client, setup_db):
     client.post('/users', json={'name': 'Jamal', 'email': 'jamal@gmail.com'})
     response = client.get('/users')
     response_body = response.get_json()
@@ -104,8 +81,7 @@ def test_add_user_to_db(client):
     assert len(response_body) == 4
 
 @pytest.mark.users
-def test_delete_user(client):
-    associate_games_and_users(client)
+def test_delete_user(client, setup_db):
     users = client.get('/users').get_json()
     user_id = get_id(users, 'Sarah', 'uid')
     #Delete Sarah
@@ -126,8 +102,7 @@ def test_delete_user(client):
 ### GAMES ###
 
 @pytest.mark.games
-def test_get_games(client):
-    associate_games_and_users(client)
+def test_get_games(client, setup_db):
     response = client.get('/games')
     response_body = response.get_json()
 
@@ -139,10 +114,8 @@ def test_get_games(client):
         assert 'user_ids' in game.keys()
 
 @pytest.mark.games
-def test_get_game_by_id(client):
-    associate_games_and_users(client)
-    games = client.get('/games').get_json()
-    game_id = get_id(games, 'Pathfinder 2e', 'gid')
+def test_get_game_by_id(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
     response = client.get(f'/games?game_id={game_id}')
     response_body = response.get_json()
 
@@ -152,10 +125,8 @@ def test_get_game_by_id(client):
     assert 'user_ids' in response_body.keys()
 
 @pytest.mark.games
-def test_delete_game(client):
-    associate_games_and_users(client)
-    games = client.get('/games').get_json()
-    game_id = get_id(games, 'Pathfinder 2e', 'gid')
+def test_delete_game(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
     response = client.delete(f'/games?game_id={game_id}')
     response_body = response.get_json()
 
@@ -173,8 +144,7 @@ def test_delete_game(client):
         assert game_id not in user['game_ids']
 
 @pytest.mark.games
-def test_read_games_from_user(client):
-    associate_games_and_users(client)
+def test_read_games_from_user(client, setup_db):
     users = client.get('/users').get_json()
     user_id = get_id(users, 'Jaehyun', 'uid')
     
@@ -188,10 +158,8 @@ def test_read_games_from_user(client):
 ### LOCATIONS ###
 
 @pytest.mark.locations
-def test_create_location_in_game(client):
-    associate_games_and_users(client)
-    games = client.get('/games').get_json()
-    game_id = get_id(games, 'Delta Green', 'gid')
+def test_create_location_in_game(client, setup_db):
+    game_id = get_game(client, 'Delta Green')
     
     response = client.post(f'/games/locations?game_id={game_id}', json={'name': 'Agent Smith'})
     response_body = response.get_json()
@@ -206,13 +174,11 @@ def test_create_location_in_game(client):
     assert len(locations) == 2
 
 @pytest.mark.locations
-def test_delete_location(client):
-    associate_games_and_users(client)
-    games = client.get('/games').get_json()
-    game_id = get_id(games, 'Paranoia', 'gid')
+def test_delete_location(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
     #Add temporary location
-    location = client.post(f'/games/locations?game_id={game_id}', json={'name': 'Closet'}).get_json()
-    loc_id = location['lid']
+    loc_id = get_loc(client, game_id, 'Arthrax')
+    items = client.get(f'/games/locations/items?game_id={game_id}&loc_id={loc_id}').get_json()
 
     response = client.delete(f'/games/locations?game_id={game_id}&loc_id={loc_id}')
     response_body = response.get_json()
@@ -220,7 +186,153 @@ def test_delete_location(client):
     assert response_body['success'] == True
 
     locations = client.get(f'/games/locations?game_id={game_id}').get_json()
-    assert len(locations) == 1
+    assert len(locations) == 2
 
-    #!!! Add tests for item unassignment
+    #Verify items have been moved to Unassigned
+    unassigned_id = get_id(locations, 'Unassigned', 'lid')
+    unassigned_loc = client.get(f'/games/locations?game_id={game_id}&loc_id={unassigned_id}').get_json()
+    for item in items:
+        assert item['iid'] in unassigned_loc['item_ids']
+        item_new = client.get(f'/games/items?game_id={game_id}&item_id={item["iid"]}').get_json()
+        assert item_new['lid'] == unassigned_id
 
+@pytest.mark.locations
+def test_get_all_locations(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+
+    response = client.get(f'/games/locations?game_id={game_id}')
+    response_body = response.get_json()
+
+    assert len(response_body) == 3
+
+@pytest.mark.locations
+def test_get_location_by_id(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    loc_id = get_loc(client, game_id, 'Balerion')
+
+    response = client.get(f'/games/locations?game_id={game_id}&loc_id={loc_id}')
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Balerion'
+    assert response_body['gid'] == game_id
+    assert response_body['lid'] == loc_id
+    assert len(response_body['item_ids']) == 2
+    assert 'timestamp' in response_body.keys()
+    
+### ITEMS ###
+
+@pytest.mark.items
+def test_get_all_items(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+
+    response = client.get(f'/games/items?game_id={game_id}')
+    response_body = response.get_json()
+
+    assert len(response_body) == 3
+
+@pytest.mark.items
+def test_get_no_items(client, setup_db):
+    game_id = get_game(client, 'Delta Green')
+
+    response = client.get(f'/games/items?game_id={game_id}')
+    response_body = response.get_json()
+
+    assert len(response_body) == 0
+
+@pytest.mark.items
+def test_get_item_by_id(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    item_id = get_item(client, game_id, 'Marauding Axe')
+
+    response = client.get(f'/games/items?game_id={game_id}&item_id={item_id}')
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Marauding Axe'
+    assert response_body['gid'] == game_id
+    assert response_body['iid'] == item_id
+    assert 'lid' in response_body.keys()
+    assert 'timestamp' in response_body.keys()
+
+@pytest.mark.items
+def test_get_items_from_location(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    loc_id = get_loc(client, game_id, 'Arthrax')
+
+    response = client.get(f'/games/locations/items?game_id={game_id}&loc_id={loc_id}')
+    response_body = response.get_json()
+
+    assert len(response_body) == 1
+
+@pytest.mark.items
+def test_delete_item(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    item_id = get_item(client, game_id, 'Marauding Axe')
+    loc_id = client.get(f'/games/items?game_id={game_id}&item_id={item_id}').get_json()['lid']
+
+    response = client.delete(f'/games/items?game_id={game_id}&item_id={item_id}')
+    response_body = response.get_json()
+
+    assert response_body['success'] == True
+    location = client.get(f'/games/locations?game_id={game_id}&loc_id={loc_id}').get_json()
+    assert item_id not in location['item_ids']
+
+@pytest.mark.items
+def test_move_item(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    source_loc = get_loc(client, game_id, 'Balerion')
+    dest_loc = get_loc(client, game_id, 'Arthrax')
+    item_id = get_item(client, game_id, 'Rivening Shield')
+
+    response = client.patch(f'/games/items?game_id={game_id}&loc_id={source_loc}&item_id={item_id}', json={'loc_id': dest_loc})
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Rivening Shield'
+    assert response_body['lid'] == dest_loc
+    assert response_body['gid'] == game_id
+    assert response_body['iid'] == item_id
+    assert 'timestamp' in response_body.keys()
+
+    source = client.get(f'/games/locations?game_id={game_id}&loc_id={source_loc}').get_json()
+    dest = client.get(f'/games/locations?game_id={game_id}&loc_id={dest_loc}').get_json()
+
+    assert item_id not in source['item_ids']
+    assert item_id in dest['item_ids']
+
+@pytest.mark.items
+def test_create_item_no_location(client, setup_db):
+    game_id = get_game(client, 'Delta Green')
+    
+    response = client.post(f'/games/items?game_id={game_id}', json={'name': 'Tome of Yog-Sothoth', 'type': 'Tome'})
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Tome of Yog-Sothoth'
+    assert response_body['gid'] == game_id
+    assert 'timestamp' in response_body.keys()
+    assert 'iid' in response_body.keys()
+    assert 'type' in response_body.keys()
+
+    loc_id = get_loc(client, game_id, 'Unassigned')
+    location = client.get(f'/games/locations?game_id={game_id}&loc_id={loc_id}').get_json()
+    item_id = get_item(client, game_id, 'Tome of Yog-Sothoth')
+
+    assert response_body['lid'] == loc_id
+    assert item_id in location['item_ids']
+
+@pytest.mark.items
+def test_create_item_with_location(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    loc_id = get_loc(client, game_id, 'Arthrax')
+
+    response = client.post(f'/games/items?game_id={game_id}&loc_id={loc_id}', json={'name': 'Robes of Invisibility'})
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Robes of Invisibility'
+    assert response_body['gid'] == game_id
+    assert response_body['lid'] == loc_id
+    assert 'iid' in response_body.keys()
+    assert 'timestamp' in response_body.keys()
+
+    location = client.get(f'/games/locations?game_id={game_id}&loc_id={loc_id}').get_json()
+    item_id = get_item(client, game_id, 'Robes of Invisibility')
+
+    assert item_id in location['item_ids']
