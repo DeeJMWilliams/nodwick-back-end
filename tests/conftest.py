@@ -1,14 +1,18 @@
 import pytest
 from app import create_app
 from app import db
+from flask.signals import request_finished
 
 @pytest.fixture
 def app():
     app = create_app({"TESTING": True})
 
-    yield app
+    @request_finished.connect_via(app)
+    def expire_session(sender, response, **extra):
+        db.reset()
 
-    db.reset()
+    with app.app_context():
+        yield app
 
 
 @pytest.fixture
@@ -29,17 +33,17 @@ def setup_db(client):
     client.patch(f'/users?user_id={steve["uid"]}&game_id={pathfinder["gid"]}')
     client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={pathfinder["gid"]}')
     client.patch(f'/users?user_id={sarah["uid"]}&game_id={pathfinder["gid"]}')
-    #Add steve and sarah to delta green game
+    #Add users to delta green game
     client.patch(f'/users?user_id={steve["uid"]}&game_id={delta_green["gid"]}')
     client.patch(f'/users?user_id={sarah["uid"]}&game_id={delta_green["gid"]}')
-    #Add sarah and jaehyun to paranoia game
+    #Add users to paranoia game
     client.patch(f'/users?user_id={sarah["uid"]}&game_id={paranoia["gid"]}')
     client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={paranoia["gid"]}')
     #Create two locations in Pathfinder game
     arthrax = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Arthrax'}).get_json()
     balerion = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Balerion'}).get_json()
-    #Add an item to Arthrax's inventory
+    #Add an item to one location
     client.post(f'/games/items?game_id={pathfinder["gid"]}&loc_id={arthrax["lid"]}', json={'name': 'Staff of Blizzards'})
-    #Add two items to Balerion's inventory
+    #Add two items to one location
     client.post(f'/games/items?game_id={pathfinder["gid"]}&loc_id={balerion["lid"]}', json={'name': 'Marauding Axe'})
     client.post(f'/games/items?game_id={pathfinder["gid"]}&loc_id={balerion["lid"]}', json={'name': 'Rivening Shield'})

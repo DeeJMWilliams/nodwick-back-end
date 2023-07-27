@@ -1,10 +1,5 @@
 import pytest
 
-# NB:
-# Tests must be run one at a time to operate correctly because
-# the database doesn't clear between tests if they are run in
-# a batch. I hope to fix this if I have time.
-
 ### HELPERS ###
 
 def get_id(arr, target, id_type):
