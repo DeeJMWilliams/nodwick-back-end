@@ -3,9 +3,10 @@ from firebase_admin import credentials, firestore, initialize_app
 from dotenv import load_dotenv
 import os
 from mockfirestore import MockFirestore
+from flask_cors import CORS
 
 load_dotenv()
-initialize_app(credentials.Certificate('key.json'))
+initialize_app(credentials.Certificate('testkey.json'))
 db = firestore.client()
 
 # Initialize Flask app
@@ -25,5 +26,6 @@ def create_app(test_config=None):
     app.register_blueprint(user_bp)
     app.register_blueprint(game_bp)
 
+    CORS(app)
     return app
 

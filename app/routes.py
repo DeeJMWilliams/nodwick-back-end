@@ -60,12 +60,14 @@ def add_game_to_user():
     user_id = request.args.get('user_id')
     #Add game ID to user's list of game IDs
     user = users_ref.document(user_id).get().to_dict()
-    user['game_ids'].append(game_id)
-    users_ref.document(user_id).set(user)
+    if game_id not in user['game_ids']:
+        user['game_ids'].append(game_id)
+        users_ref.document(user_id).set(user)
     #Add user ID to game's list of user IDs
     game = games_ref.document(game_id).get().to_dict()
-    game['user_ids'].append(user_id)
-    games_ref.document(game_id).set(game)
+    if user_id not in game['user_ids']:
+        game['user_ids'].append(user_id)
+        games_ref.document(game_id).set(game)
     return jsonify(user), 200
 
 ### GAMES ###
@@ -87,7 +89,7 @@ def create_game():
     #Create default 'unassigned' location for game
     loc_id = str(uuid.uuid4())
     loc_ref = games_ref.document(game_id).collection('locations')
-    loc_data = {'lid':loc_id, 'gid': game_id, 'item_ids': [], 'name': 'Unassigned', 'timestamp': str(datetime.datetime.now())}
+    loc_data = {'lid':loc_id, 'gid': game_id, 'type': 'location', 'item_ids': [], 'name': 'Unassigned', 'timestamp': str(datetime.datetime.now())}
     loc_ref.document(loc_id).set(loc_data)
     return jsonify(new_game), 200
 
@@ -141,9 +143,10 @@ def read_games_from_user():
 def add_location():
     game_id = request.args.get('game_id')
     name = request.json['name']
+    type_name = request.json['type']
     loc_id = str(uuid.uuid4())
     loc_ref = games_ref.document(game_id).collection('locations')
-    loc_data = {'name': name, 'lid': loc_id, 'gid': game_id, 'item_ids': [], 'timestamp': str(datetime.datetime.now())}
+    loc_data = {'name': name, 'lid': loc_id, 'gid': game_id, 'type': type_name, 'item_ids': [], 'timestamp': str(datetime.datetime.now())}
     loc_ref.document(loc_id).set(loc_data)
     return jsonify(loc_data), 200
 
