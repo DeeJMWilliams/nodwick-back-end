@@ -8,6 +8,7 @@ from flask_cors import CORS
 load_dotenv()
 initialize_app(credentials.Certificate('testkey.json'))
 db = firestore.client()
+mock_db = MockFirestore()
 
 # Initialize Flask app
 def create_app(test_config=None):
@@ -18,7 +19,7 @@ def create_app(test_config=None):
         app.config['ENV'] = 'development'
         app.config['DEBUG'] = True
         app.config['TESTING'] = True
-        db = MockFirestore()
+        db = mock_db
     else:
         app.config['databaseURL'] = os.environ.get('DB')
 

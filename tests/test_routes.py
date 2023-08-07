@@ -5,9 +5,7 @@ import pytest
 def get_id(arr, target, id_type):
     for item in arr:
         if item['name'] == target:
-            result = item[id_type]
-            break
-    return result
+            return item[id_type]
 
 def get_game(client, name):
     games = client.get('/games').get_json()
@@ -25,7 +23,6 @@ def get_item(client, game_id, name):
 
 @pytest.mark.users
 def test_get_all_users(client, setup_db):
-    # setup_db(client)
     response = client.get('/users')
     response_body = response.get_json()
 
@@ -150,13 +147,27 @@ def test_read_games_from_user(client, setup_db):
     for game in response_body:
         assert user_id in game['user_ids']
 
+@pytest.mark.games
+def test_rename_game(client, setup_db):
+    games = client.get('/games').get_json()
+    game_id = get_id(games, 'Delta Green', 'gid')
+
+    response = client.patch(f'/games?game_id={game_id}', json={'name': 'Call of Cthulhu'})
+    response_body = response.get_json()
+
+    assert response_body['gid'] == game_id
+    assert response_body['name'] == 'Call of Cthulhu'
+
+    game = client.get(f'/games?game_id={game_id}').get_json()
+    assert game['name'] == 'Call of Cthulhu'
+
 ### LOCATIONS ###
 
 @pytest.mark.locations
 def test_create_location_in_game(client, setup_db):
     game_id = get_game(client, 'Delta Green')
     
-    response = client.post(f'/games/locations?game_id={game_id}', json={'name': 'Agent Smith'})
+    response = client.post(f'/games/locations?game_id={game_id}', json={'name': 'Agent Smith', 'type': 'character'})
     response_body = response.get_json()
 
     assert response_body['name'] == 'Agent Smith'
@@ -213,6 +224,26 @@ def test_get_location_by_id(client, setup_db):
     assert response_body['lid'] == loc_id
     assert len(response_body['item_ids']) == 2
     assert 'timestamp' in response_body.keys()
+
+@pytest.mark.locations
+def test_rename_location(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    loc_id = get_loc(client, game_id, 'Balerion')
+
+    response = client.patch(f'/games/locations?game_id={game_id}&loc_id={loc_id}', json={"name": "Durthar"})
+    response_body = response.get_json()
+
+    assert response_body['lid'] == loc_id
+    assert response_body['gid'] == game_id
+    assert response_body['name'] == 'Durthar'
+
+    location = client.get(f'/games/locations?game_id={game_id}&loc_id={loc_id}').get_json()
+
+    assert location['name'] == 'Durthar'
+    assert location['lid'] == loc_id
+    assert location['gid'] == game_id
+    assert location['type'] == 'character'
+
     
 ### ITEMS ###
 
@@ -278,7 +309,7 @@ def test_move_item(client, setup_db):
     dest_loc = get_loc(client, game_id, 'Arthrax')
     item_id = get_item(client, game_id, 'Rivening Shield')
 
-    response = client.patch(f'/games/items?game_id={game_id}&loc_id={source_loc}&item_id={item_id}', json={'loc_id': dest_loc})
+    response = client.patch(f'/games/items/locations?game_id={game_id}&loc_id={source_loc}&item_id={item_id}', json={'loc_id': dest_loc})
     response_body = response.get_json()
 
     assert response_body['name'] == 'Rivening Shield'
@@ -318,7 +349,7 @@ def test_create_item_with_location(client, setup_db):
     game_id = get_game(client, 'Pathfinder 2e')
     loc_id = get_loc(client, game_id, 'Arthrax')
 
-    response = client.post(f'/games/items?game_id={game_id}&loc_id={loc_id}', json={'name': 'Robes of Invisibility'})
+    response = client.post(f'/games/items?game_id={game_id}&loc_id={loc_id}', json={'name': 'Robes of Invisibility', 'type': 'Clothing'})
     response_body = response.get_json()
 
     assert response_body['name'] == 'Robes of Invisibility'
@@ -331,3 +362,22 @@ def test_create_item_with_location(client, setup_db):
     item_id = get_item(client, game_id, 'Robes of Invisibility')
 
     assert item_id in location['item_ids']
+
+@pytest.mark.items
+def test_change_fields_of_item(client, setup_db):
+    game_id = get_game(client, 'Pathfinder 2e')
+    item_id = get_item(client, game_id, 'Marauding Axe')
+
+    response = client.patch(f'/games/items?game_id={game_id}&item_id={item_id}', json={'name': 'Fire Robes', 'type':'Clothing'})
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Fire Robes'
+    assert response_body['type'] == 'Clothing'
+    assert response_body['gid'] == game_id
+    assert response_body['iid'] == item_id
+
+    item = client.get(f'/games/items?game_id={game_id}&item_id={item_id}').get_json()
+
+    for key in item.keys():
+        assert item[key] == response_body[key]
+

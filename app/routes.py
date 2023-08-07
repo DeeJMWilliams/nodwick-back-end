@@ -1,6 +1,7 @@
 from flask import request, jsonify, make_response, abort, Blueprint
 from app import db
 import uuid
+import copy
 import datetime
 from .helpers import remove_item_from_location, add_item_to_location, change_item_location, get_unassigned
 
@@ -68,7 +69,7 @@ def add_game_to_user():
     if user_id not in game['user_ids']:
         game['user_ids'].append(user_id)
         games_ref.document(game_id).set(game)
-    return jsonify(user), 200
+    return jsonify(game), 200
 
 ### GAMES ###
 
@@ -136,6 +137,17 @@ def read_games_from_user():
         games_list.append(game.to_dict())
     return jsonify(games_list)
 
+#Rename game
+@game_bp.route('', methods=['PATCH'])
+def rename_game():
+    game_id = request.args.get('game_id')
+    name = request.json['name']
+    game = games_ref.document(game_id).get().to_dict()
+    new_game = copy.deepcopy(game)
+    new_game['name'] = name
+    games_ref.document(game_id).set(new_game)
+    return jsonify(new_game), 200
+
 ### LOCATIONS ###
 
 #Create location within game
@@ -179,6 +191,18 @@ def read_locations():
     else:
         all_locs = [doc.to_dict() for doc in loc_ref.stream()]
         return jsonify(all_locs), 200
+    
+#Rename location
+@game_bp.route('/locations', methods=['PATCH'])
+def rename_location():
+    game_id = request.args.get('game_id')
+    loc_id = request.args.get('loc_id')
+    name = request.json['name']
+    loc_ref = games_ref.document(game_id).collection('locations')
+    new_loc = loc_ref.document(loc_id).get().to_dict()
+    new_loc['name'] = name
+    loc_ref.document(loc_id).set(new_loc)
+    return jsonify(new_loc)
 
 ### ITEMS ###
 
@@ -217,7 +241,7 @@ def delete_item():
     return jsonify({'success': True}), 200
 
 # Change location of item
-@game_bp.route('/items', methods=['PATCH'])
+@game_bp.route('/items/locations', methods=['PATCH'])
 def update_item_location():
     game_id = request.args.get('game_id')
     item_id = request.args.get('item_id')
@@ -226,6 +250,22 @@ def update_item_location():
     item = change_item_location(games_ref, game_id, item_id, new_loc)
     remove_item_from_location(games_ref, game_id, item_id, loc_id)
     add_item_to_location(games_ref, game_id, item_id, new_loc)
+    return jsonify(item), 200
+
+# Change name/type of item
+@game_bp.route('/items', methods=['PATCH'])
+def update_item_fields():
+    game_id = request.args.get('game_id')
+    item_id = request.args.get('item_id')
+    items = games_ref.document(game_id).collection('items')
+    item = items.document(item_id).get().to_dict()
+    data = request.json
+
+    for field, value in data.items():
+        item[field] = value
+    
+    items.document(item_id).set(item)
+
     return jsonify(item), 200
 
 #Get item or list of items

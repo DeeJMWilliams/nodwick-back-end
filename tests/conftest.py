@@ -1,6 +1,5 @@
 import pytest
-from app import create_app
-from app import db
+from app import create_app, db
 from flask.signals import request_finished
 
 @pytest.fixture
@@ -9,7 +8,8 @@ def app():
 
     @request_finished.connect_via(app)
     def expire_session(sender, response, **extra):
-        db.reset()
+        pass
+        #db.reset()
 
     with app.app_context():
         yield app
@@ -40,8 +40,8 @@ def setup_db(client):
     client.patch(f'/users?user_id={sarah["uid"]}&game_id={paranoia["gid"]}')
     client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={paranoia["gid"]}')
     #Create two locations in Pathfinder game
-    arthrax = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Arthrax'}).get_json()
-    balerion = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Balerion'}).get_json()
+    arthrax = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Arthrax', 'type':'character'}).get_json()
+    balerion = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Balerion', 'type':'character'}).get_json()
     #Add an item to one location
     client.post(f'/games/items?game_id={pathfinder["gid"]}&loc_id={arthrax["lid"]}', json={'name': 'Staff of Blizzards'})
     #Add two items to one location
