@@ -4,9 +4,10 @@ from dotenv import load_dotenv
 import os
 from mockfirestore import MockFirestore
 from flask_cors import CORS
+import json
 
 load_dotenv()
-initialize_app(credentials.Certificate('testkey.json'))
+initialize_app(credentials.Certificate(json.loads(os.environ.get('KEY'))))
 db = firestore.client()
 mock_db = MockFirestore()
 
