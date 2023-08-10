@@ -22,9 +22,9 @@ def client(app):
 @pytest.fixture
 def setup_db(client):
     #Create three users
-    steve = client.post('/users', json={'name': 'Steve', 'email': 'steve@gmail.com'}).get_json()
-    jaehyun = client.post('/users', json={'name': 'Jaehyun', 'email': 'jaehyun@gmail.com'}).get_json()
-    sarah = client.post('/users', json={'name': 'Sarah', 'email': 'sarah@gmail.com'}).get_json()
+    steve = client.post('/users', json={'name': 'Steve', 'email': 'steve@gmail.com', 'uid': '1'}).get_json()
+    jaehyun = client.post('/users', json={'name': 'Jaehyun', 'email': 'jaehyun@gmail.com', 'uid': '2'}).get_json()
+    sarah = client.post('/users', json={'name': 'Sarah', 'email': 'sarah@gmail.com', 'uid': '3'}).get_json()
     #Create three games
     pathfinder = client.post('/games', json={'name': 'Pathfinder 2e'}).get_json()
     delta_green = client.post('/games', json={'name': 'Delta Green'}).get_json()

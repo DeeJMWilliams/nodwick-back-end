@@ -22,9 +22,8 @@ def create_user():
         abort(make_response(jsonify({"message": "Name not found"}), 404))
     #Create user with id, games, and timestamp fields
     new_user = request.json
-    user_id = str(uuid.uuid4())
+    user_id = request.json['uid']
     new_user['game_ids'] = []
-    new_user['uid'] = user_id
     new_user['timestamp'] = str(datetime.datetime.now())
     users_ref.document(user_id).set(new_user)
     return jsonify(new_user), 200

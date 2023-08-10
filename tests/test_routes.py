@@ -53,7 +53,7 @@ def test_get_user_by_id(client, setup_db):
 
 @pytest.mark.users
 def test_create_user(client, setup_db):
-    response = client.post('/users', json={'name': 'Jamal', 'email': 'jamal@gmail.com'})
+    response = client.post('/users', json={'name': 'Jamal', 'email': 'jamal@gmail.com', 'uid': '4'})
     response_body = response.get_json()
 
     assert isinstance(response_body, dict)
