@@ -28,5 +28,9 @@ def create_app(test_config=None):
     app.register_blueprint(game_bp)
 
     CORS(app)
+
+    if __name__ == '__main__':
+        app.run(port=int(os.environ.get('PORT')))
+
     return app
 
