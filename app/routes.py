@@ -54,7 +54,7 @@ def delete_user():
     return jsonify({"success": True}), 200
     
 #Add user to game
-@user_bp.route('', methods=['PATCH'])
+@user_bp.route('/games', methods=['PATCH'])
 def add_game_to_user():
     game_id = request.args.get('game_id')
     user_id = request.args.get('user_id')
@@ -69,6 +69,16 @@ def add_game_to_user():
         game['user_ids'].append(user_id)
         games_ref.document(game_id).set(game)
     return jsonify(game), 200
+
+#Edit user's name
+@user_bp.route('', methods=['PATCH'])
+def rename_user():
+    user_id = request.args.get('user_id')
+    user = users_ref.document(user_id).get().to_dict()
+    name = request.json['name']
+    user['name'] = name
+    users_ref.document(user_id).set(user)
+    return jsonify(user), 200
 
 ### GAMES ###
 

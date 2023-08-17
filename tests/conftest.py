@@ -30,15 +30,15 @@ def setup_db(client):
     delta_green = client.post('/games', json={'name': 'Delta Green'}).get_json()
     paranoia = client.post('/games', json={'name': 'Paranoia'}).get_json()
     #Add all users to pathfinder game
-    client.patch(f'/users?user_id={steve["uid"]}&game_id={pathfinder["gid"]}')
-    client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={pathfinder["gid"]}')
-    client.patch(f'/users?user_id={sarah["uid"]}&game_id={pathfinder["gid"]}')
+    client.patch(f'/users/games?user_id={steve["uid"]}&game_id={pathfinder["gid"]}')
+    client.patch(f'/users/games?user_id={jaehyun["uid"]}&game_id={pathfinder["gid"]}')
+    client.patch(f'/users/games?user_id={sarah["uid"]}&game_id={pathfinder["gid"]}')
     #Add users to delta green game
-    client.patch(f'/users?user_id={steve["uid"]}&game_id={delta_green["gid"]}')
-    client.patch(f'/users?user_id={sarah["uid"]}&game_id={delta_green["gid"]}')
+    client.patch(f'/users/games?user_id={steve["uid"]}&game_id={delta_green["gid"]}')
+    client.patch(f'/users/games?user_id={sarah["uid"]}&game_id={delta_green["gid"]}')
     #Add users to paranoia game
-    client.patch(f'/users?user_id={sarah["uid"]}&game_id={paranoia["gid"]}')
-    client.patch(f'/users?user_id={jaehyun["uid"]}&game_id={paranoia["gid"]}')
+    client.patch(f'/users/games?user_id={sarah["uid"]}&game_id={paranoia["gid"]}')
+    client.patch(f'/users/games?user_id={jaehyun["uid"]}&game_id={paranoia["gid"]}')
     #Create two locations in Pathfinder game
     arthrax = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Arthrax', 'type':'character'}).get_json()
     balerion = client.post(f'/games/locations?game_id={pathfinder["gid"]}', json={'name': 'Balerion', 'type':'character'}).get_json()

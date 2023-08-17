@@ -91,6 +91,17 @@ def test_delete_user(client, setup_db):
     for game in games:
         assert user_id not in game['user_ids']
 
+@pytest.mark.users
+def test_rename_user(client, setup_db):
+    users = client.get('/users').get_json()
+    user_id = get_id(users, 'Sarah', 'uid')
+
+    response = client.patch(f'/users?user_id={user_id}', json={'name': 'Kathy'})
+    response_body = response.get_json()
+
+    assert response_body['name'] == 'Kathy'
+    assert response_body['uid'] == user_id
+
 ### GAMES ###
 
 @pytest.mark.games
