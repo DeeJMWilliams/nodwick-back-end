@@ -157,6 +157,14 @@ def rename_game():
     games_ref.document(game_id).set(new_game)
     return jsonify(new_game), 200
 
+#Get list of users in game
+@game_bp.route('/users', methods=['GET'])
+def get_game_users():
+    game_id = request.args.get('game_id')
+    game = games_ref.document(game_id).get().to_dict()
+    user_ids = [users_ref.document(user_id).get().to_dict() for user_id in game['user_ids']]
+    return jsonify(user_ids), 200
+
 ### LOCATIONS ###
 
 #Create location within game
