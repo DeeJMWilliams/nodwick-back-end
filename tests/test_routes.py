@@ -188,6 +188,18 @@ def test_get_users_for_game(client, setup_db):
         assert 'timestamp' in user.keys()
         assert 'email' in user.keys()
 
+@pytest.mark.games
+def test_remove_user_from_game(client, setup_db):
+    games = client.get('/games').get_json()
+    game_id = get_id(games, 'Delta Green', 'gid')
+    users = client.get('/users').get_json()
+    user_id = get_id(users, 'Steve', 'uid')
+
+    response = client.patch(f'/games/users?game_id={game_id}&user_id={user_id}')
+    response_body = response.get_json()
+
+    assert len(response_body['user_ids']) == 1
+
 ### LOCATIONS ###
 
 @pytest.mark.locations

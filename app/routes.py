@@ -165,6 +165,21 @@ def get_game_users():
     user_ids = [users_ref.document(user_id).get().to_dict() for user_id in game['user_ids']]
     return jsonify(user_ids), 200
 
+#Remove user from game
+@game_bp.route('/users', methods=['PATCH'])
+def remove_user_from_game():
+    game_id = request.args.get('game_id')
+    user_id = request.args.get('user_id')
+    #Handle game
+    game = games_ref.document(game_id).get().to_dict()
+    game['user_ids'] = [id for id in game['user_ids'] if id != user_id]
+    games_ref.document(game_id).set(game)
+    #Handle user
+    user = users_ref.document(user_id).get().to_dict()
+    user['game_ids'] = [id for id in user['game_ids'] if id != game_id]
+    users_ref.document(user_id).set(user)
+    return jsonify(game), 200
+
 ### LOCATIONS ###
 
 #Create location within game
