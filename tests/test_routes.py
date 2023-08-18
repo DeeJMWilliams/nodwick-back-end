@@ -172,6 +172,22 @@ def test_rename_game(client, setup_db):
     game = client.get(f'/games?game_id={game_id}').get_json()
     assert game['name'] == 'Call of Cthulhu'
 
+@pytest.mark.games
+def test_get_users_for_game(client, setup_db):
+    games = client.get('/games').get_json()
+    game_id = get_id(games, 'Delta Green', 'gid')
+
+    response = client.get(f'/games/users?game_id={game_id}')
+    response_body = response.get_json()
+
+    assert len(response_body) == 2
+    for user in response_body:
+        assert 'uid' in user.keys()
+        assert 'game_ids' in user.keys()
+        assert 'name' in user.keys()
+        assert 'timestamp' in user.keys()
+        assert 'email' in user.keys()
+
 ### LOCATIONS ###
 
 @pytest.mark.locations
